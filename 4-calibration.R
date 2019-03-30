@@ -16,7 +16,7 @@ par_ind<-ref_ind <- seq(from=1, to=length(angers2003reflectance))
 ndat_ref <- length(ref_ind)
 
 #Calculate sd of reflectance to include in the ll calculation
-ref_ind <- 300 # index use to optimice
+ref_ind <- 400 # index use to optimice
 samp <- 1 #sample which parameters are used
 sd_ref<- sd(angers2003reflectance[ref_ind,])
 
@@ -42,7 +42,16 @@ BSpreles <- createBayesianSetup(likelihood, prior, best = param$def, names = par
 
 #=Run the MCMC with three chains=#
 
-settings <- list(iterations = 3e4, optimize=F, nrChains = 1)
+settings <- list(iterations = 3e3, optimize=F, nrChains = 2)
 chainDE <- runMCMC(BSpreles, sampler="DEzs", settings = settings)
 par.opt<-MAP(chainDE) #gets the optimized maximum value for the parameters
+
+#=Check convergence -- Trace plots=#
+
+pdf("check-plots.pdf")
+tracePlot(chainDE, parametersOnly = TRUE, start = 1, whichParameters = 1:5)
+
+marginalPlot(chainDE, scale = T, best = T, start = 5000)
+correlationPlot(chainDE, parametersOnly = TRUE, start = 2000)
+dev.off()
 
