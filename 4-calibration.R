@@ -19,7 +19,7 @@ ndat_ref <- length(ref_ind)
 ref_ind <- 400 # index use to optimice
 samp <- 1 #sample which parameters are used
 sd_ref<- sd(angers2003reflectance[ref_ind,])
-
+parind<-c(1:5)
 
 #1- Likelihood function
 likelihood <- function(pValues) {
