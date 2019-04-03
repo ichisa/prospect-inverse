@@ -1,23 +1,15 @@
-###
-#This code loads the input data for the model
-###
+#Sensitivity analysis for PROSPECT5
 
-require(readr)
 require (dplyr)
 require(Rprospect)
 library(ggplot2)
 require(sensitivity)
-#load prospectd data
-data_dir <- ("input_data/")
-load(file=paste0(data_dir, "prospect.RData"))#
 
-#Find wavelength that hast highest variability to work with it
-#calculates variability of all wavelengths
-ref.var <- sapply(angers2003reflectance[,],FUN=var, simplify = "array")
-#select wavelength in the spectrum with higher variability
-reflectance.out.index <- which(ref.var==max(ref.var))
+#############################
+###'()Local sensitivity()'###
+#############################
 
-#Values from literature Feret 2008
+#Parameter Values from literature Feret 2008
 N<-c(1.6, 1, 4)
 Cab<-c(45, 6, 100)
 Car<-c(10, 2, 60)
@@ -54,102 +46,94 @@ per.change.low<-per.change.upper<-matrix(NA,length(wvl),5)
 WL.out<-param
 
 for (w in c(1:length(wvl))){
+  WL.out[,c(1:3)] <- out[,,wvl[w]]
+  #Absolute change
+  abs.change.low[w,] <- abs((WL.out$def-WL.out$min)/(param$def-param$min))
+  abs.change.upper[w,] <- abs((WL.out$def-WL.out$max)/(param$def-param$max))
+  #Elasticity
+  per.change.low[w,]<- abs(((WL.out$def-WL.out$min)/WL.out$def)/((param$def-param$min)/param$def))*100
+  per.change.upper[w,] <- abs(((WL.out$def-WL.out$max)/WL.out$def)/((param$def-param$max)/param$def))*100
 
-WL.out[,c(1:3)] <- out[,,wvl[w]]
-#Absolute change
-abs.change.low[w,] <- abs((WL.out$def-WL.out$min)/(param$def-param$min))
-abs.change.upper[w,] <- abs((WL.out$def-WL.out$max)/(param$def-param$max))
-#Elasticity
-per.change.low[w,]<- abs(((WL.out$def-WL.out$min)/WL.out$def)/((param$def-param$min)/param$def))*100
-per.change.upper[w,] <- abs(((WL.out$def-WL.out$max)/WL.out$def)/((param$def-param$max)/param$def))*100
-
-}#end loop local sensitivity
+}#  end loop local sensitivity
 
 
-#Plots
+#Plots#################
+
 jpeg("rplot.png", width = 700, height = 550)
 
 par(mfrow=c(3,2), mar=c(3, 3, 1.5, 0.6), cex=0.9, cex.axis=0.85, mgp=c(2,1,0))
 for (p in 1:5){
-plot(out[p,3,], type = "l", col="darkgreen",xlab="Reflectance", ylab="Wavelength", lwd=3, ylim = c(0, 0.8))
-lines(out[p,2,], col="lightgreen", lwd=3)
-lines(out[p,1,], col="limegreen", lwd=3)
-text(50, 0.65, rownames(param)[p], cex=1.3)
+  plot(out[p,3,], type = "l", col="darkgreen",xlab="Wavelength", ylab="Reflectance", 
+       lwd=3, ylim = c(0, 0.8))
+  lines(out[p,2,], col="lightgreen", lwd=3)
+  lines(out[p,1,], col="limegreen", lwd=3)
+  text(50, 0.65, rownames(param)[p], cex=1.3)
 }
 plot(0,type='n',axes=FALSE,ann=FALSE)
 legend("bottomleft",legend =c("max"," def"," mim"), col=c("darkgreen", "limegreen","lightgreen" ), lwd=3.5, cex=1.2, bty="n")
 dev.off()
-#evaluate parameters FROM min to max values
+dev.off()
+###################
+par(mfrow=c(3,2), mar=c(3, 3, 1.5, 0.6), cex=0.9, cex.axis=0.85, mgp=c(2,1,0))
+for (p in 1:5){
+  plot(wvl, per.change.low[,p], type="l", col="darkred", xlab="Wavelength", ylab="Elasticity(%)", 
+       lwd=3)
+  lines(wvl, per.change.upper[,p], type="l", lwd=3, col="orange")
+}
+plot(0,type='n',axes=FALSE,ann=FALSE)
+legend("bottomleft",legend =c("Change from defined to lower","Change from defined to upper" ), col=c("orange", "darkred"), lwd=3.5, cex=1.2, bty="n")
+dev.off
 
+# PArameter importance for different wavelength
 
-##
-#Local sensitivity
-##
-reflectance.out.index<-300
-r<-seq(51, 2051, 500)
-for (reflectance.index in r ){
-local.df <- data.frame(result=numeric(20*5), par.value=numeric(20*5), parameter=rep(NA, 20*5) )
-count <- 1
-for (k in c(1:5)){ #Look through pars
-  results<-numeric(20)
-  seq1<-seq(param$min[k], param$max[k], length.out=20)
-  
-  for (i in 1:20){#loop through the sequence
-    parSel<-seq1[i]
-    local.df$parameter[count] <- param[k,1]
-    out.e <- sensitivityTarget(parSel, k)
-    local.df$result[count] <- out.e[reflectance.index]
-    local.df$par.value[count] <- seq1[i]
-    count=count+1
+r<-seq(51, 2051, 200)
+n<-20
+
+local.df <- data.frame(result=numeric(20*5*length(r)), 
+                       par.value=numeric(20*5*length(r)), 
+                       parameter=rep(NA, 20*5*length(r)),
+                       Wavelength=numeric(20*5*length(r)))
+
+count<-1
+for (ri in 1:length(r) ){
+  wvl<-r[ri]
+  for (k in c(1:5)){ #Look through pars
+    results<-numeric(20)
+    seq1<-seq(param$min[k], param$max[k], length.out=20)
+    for (i in 1:20){#loop through the sequence
+      parSel<-seq1[i]
+      local.df$parameter[count] <- rownames(param)[k]
+      out.e <- sensitivityTarget(parSel, k)
+      local.df$result[count] <- out.e[wvl]
+      local.df$par.value[count] <- seq1[i]
+      local.df$Wavelength[count] <- wvl
+      count<-count+1
+      
+    }
   }
 }
 
-print(
-local.df %>% ggplot(aes(x=par.value, y=result, group=parameter))+
-  geom_line( size=1.2)+
-  facet_wrap(~parameter, scales="free")+
-  xlab("Parameter value") + ylab("Predicted")+ ggtitle(reflectance.out.index)+
-  theme_bw() 
-)
-}
+local.df$Wavelength<-local.df$Wavelength+399
+local.df$parameter<-ordered(local.df$parameter, levels=c("N", "Cab", "Car", "Cw", "Cm"))#get right oreder in plot
 
-#############################################################################
-##
-#Global sensitivity-morris screning
-##
+ local.df %>% ggplot(aes(x=par.value, y=result, group=Wavelength, col=Wavelength))+
+    geom_line( size=1)+
+    facet_wrap(~parameter, scales="free")+
+    xlab("Parameter value") + ylab("Predicted Reflectance")+
+    scale_color_gradient(low="green", high="blue")+
+    theme_bw()
+
+
+#########################################
+#'()Global sensitivity-morris screning()#
+#########################################
 
 par <- param
-
-#par_sel <- 3
-sensitivityTarget2 <- function(mat){
-  result = numeric(nrow(mat))
-  for (i in 1:nrow(mat)){
-    par_temp <-param$def
-    par_temp = as.vector(mat[i,])
-    predicted <- prospect5(par_temp[1], par_temp[2],par_temp[3],par_temp[4],par_temp[5])[,2]
-    result[i] = predicted[1000]
-  }
-  return(result)
-}
-
-param$names <- c("N", "Cab", "Car", "Cw", "Cm")
-res_morris <-morris(model=sensitivityTarget2, factors = param$name,
-                    r=500, design=list(type="oat", levels=10, grid.jump=1), binf=par$min, bsup=par$max, scale=T)
-
-par(mfrow=c(1,1))
-plot(res_morris)
-
 
 ####Morris sensitivity analysisi for each wavelength###########################
  
 param$names <- c("N", "Cab", "Car", "Cw", "Cm")
-
-ws <- seq(from=1, to=2101, by=1000)
-
-morris_mu<-matrix(NA, nrow = length(ws), ncol = 5)
-morris_mustar<-matrix(NA, nrow = length(ws), ncol = 5)
-morris_sigma <- matrix(NA, nrow = length(ws), ncol = 5)
-
+ws <- seq(from=1, to=2101, by=200)
 
 #par_sel <- 3
 sensitivityTarget2 <- function(mat){
@@ -173,16 +157,17 @@ run_morris<-function(wvl){
   mu<- apply(res_morris$ee, 2, mean)
   mustar <- apply(res_morris$ee, 2, function(x) mean(abs(x)))
   sigma <- apply(res_morris$ee, 2, sd)
-return(list(mu, musigma, mustar))
+return(sigma)
 }
 
 ptm <- proc.time()
-mustar<-sapply(1:200, run_morris)
+sigma<-sapply(ws, run_morris)
+sigma
 t2<-proc.time()
 t<-ptm$user-t2$user
 
 par(mfrow=c(1,1))
 plot(res_morris)
 
-save(mu, file="101-200 mu sensitivity morris")
+save(musar,sigma ,ws,file="morris-sensitivity-analysis.RData")
 
