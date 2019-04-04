@@ -171,3 +171,19 @@ plot(res_morris)
 
 save(musar,sigma ,ws,file="morris-sensitivity-analysis.RData")
 
+dev.off()
+plot(musar[,1], sigma[,1], pch=19, xlim=c(0, 0.5), ylim=c(0, 0.5), xlab = "mu*", ylab="sigma", main="Global Sensitvity Analysis")
+text(musar[,1], sigma[,1], labels=rownames(musar), cex= 0.7, pos=3)
+
+points(musar[,3], sigma[,3], pch=19, xlim=c(0, 0.5), ylim=c(0, 0.5), col="red")
+text(musar[,1], sigma[,1], labels=rownames(musar), cex= 0.7, pos=3)
+
+
+points(musar[,8], sigma[,8], pch=19, xlim=c(0, 0.5), ylim=c(0, 0.5), col="blue")
+text(musar[,1], sigma[,1], labels=rownames(musar), cex= 0.7, pos=3)
+
+points(musar[,11], sigma[,11], pch=19, xlim=c(0, 0.5), ylim=c(0, 0.5), col="green")
+text(musar[,1], sigma[,1], labels=rownames(musar), cex= 0.7, pos=3)
+
+
+legend("bottomright", legend = c(ws[1], ws[5], ws[8], ws[11]), pch=19, col=c("black", "red", "blue", "green"))
