@@ -7,15 +7,15 @@ library(readr)
 #####################################
 
 #Loads needed functions
-source('bayes_functions.R')
-rm(lopex1993metadata, lopex1993reflectance)
+source('00-bayes-functions.R')
+#rm(lopex1993metadata, lopex1993reflectance)
 
 nparams<-5
 model<-prospect5 # defines model from library Rprospect
 
 #Define spectrum to invert
-observed<-as.numeric(angers2003reflectance[2,])
-#observed[2052:2101]<-observed[2051]
+#observed<-as.numeric(angers2003reflectance[2,])
+
 default_parameters <- c(N=1.5, Cab=40, Car=8, Cw=0.01, Cm=0.009) #Valores que vienen de feret 2008biblio
 
 #'#######################
@@ -24,7 +24,7 @@ default_parameters <- c(N=1.5, Cab=40, Car=8, Cw=0.01, Cm=0.009) #Valores que vi
 
 
 fail_ll <- -1e10
-n_obs <- length(observed)
+n_obs <- length(1:2051)#measured data is from 1 to 2051, smaller than prospect output
 llfunction <- function(x) {
   rtm_params <- x[seq_len(nparams)]
   rsd <- x[nparams + 1]
@@ -47,7 +47,7 @@ llfunction <- function(x) {
 defpram <- default_parameters 
 col_names <- c('param_name', 'distn', 'parama', 'paramb', 'lower', 'best', 'upper')
 prior_list <- list(#values from Feret 2008
-  N = list('N', 'norm', 1.4, 0.8, 1, 1.4, 4),
+  N = list('N', 'lnorm', log(1.4), 0.8, 1, 1.4, 4),
   Cab = list('Cab', 'lnorm', log(40), 0.9, 0, 40, 110),
   Car = list('Car', 'lnorm', log(10), 1.1, 0, 10, 30),
   Cw = list('Cw', 'lnorm', log(0.01), 1, 0, 0.01, 0.5),
@@ -66,6 +66,7 @@ rm(prior_df_all, prior_list)
 #Define the settings
 loglike<-llfunction
 settings <- list(
+#  nrChains<-3,
   common = list(),
   init = list(iterations = 10000),
   loop = list(iterations = 2000),
@@ -88,15 +89,11 @@ invert_prospect<-function(observed, loglike, settings){
   test_samp <- prior$sampler()
   param_names <- names(test_samp)
   
-  
-  
-  
   setup <- BayesianTools::createBayesianSetup(
     likelihood = loglike,
     prior = prior,
     names = param_names
   )
-  
   
   init_settings <- modifyList(settings[['common']], settings[['init']])
   stop_iter <- init_settings[["iterations"]]
@@ -116,8 +113,6 @@ invert_prospect<-function(observed, loglike, settings){
   loop_settings <- modifyList(settings[['common']], settings[['loop']])
   
   next_iter <- loop_settings[['iterations']]
-  
-  
   
   while (!(converged)) {
     start_iter <- stop_iter + 1
@@ -139,20 +134,6 @@ invert_prospect<-function(observed, loglike, settings){
   #return(list(samples, coda_samples))
   return(samples)
 }#end functions invert prospect
-
-
-#Test the funcions 
-
-inversion <- invert_prospect( observed = observed, loglike = llfunction, settings = settings) 
-
-
-pdf("check-plots.pdf")
-tracePlot(samples, parametersOnly = TRUE, start = 1, whichParameters = 1:5)
-marginalPlot(samples, scale = T, best = T, start = 5000)
-correlationPlot(samples, parametersOnly = TRUE, start = 2000)
-dev.off()
-
-save(inversion,samples, observed, model, file="C:/Users/ichas/Documents/master thesis/current topic/code-bayesian-inversion-prospect/inversion_example.RData")
 
 
 

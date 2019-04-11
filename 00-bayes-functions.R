@@ -18,7 +18,7 @@ converge_test <- function(samples, threshold = 1.1, use_CI = TRUE) {
     exceeds_vec <- gelman_vec[exceeds]
     exceeds_char <- sprintf('%s: %.2f', names(exceeds_vec), exceeds_vec)
     exceeds_str <- paste(exceeds_char, collapse = '; ')
-    message('The following parameters exceed threshold: ', exceeds_str)
+    message('The folowing parameters exceed threshold: ', exceeds_str)
     return(FALSE)
   } else {
     return(TRUE)
@@ -29,17 +29,17 @@ converge_test <- function(samples, threshold = 1.1, use_CI = TRUE) {
 #'B) create.bprior####
 ############################
 
-##' Create priors for BayesianTools
-##' 
-##' prior.sel must contain the following columns:
-##' `distn` -- String describing a distribution; e.g. `norm` for `dnorm`, `rnorm`, etc.
-##' `parama`, `paramb` -- First and second parameters, respectively, of the corresponding distribution
-##'
-##' Optionally, `prior.sel` may also contain the following columns:
-##'   * `param_name` -- Parameter name, which will be carried through to the prior object and sampler
-##'   * `lower`, `upper` -- Lower and upper bounds, respectively. These can be leveraged by the BayesianTools samplers.
-##'   * `best` -- Best guess for a parameter estimate. BayesianTools can also use this, though 
-##'    
+## Create priors for BayesianTools
+## 
+## prior.sel must contain the following columns:
+## `distn` -- String describing a distribution; e.g. `norm` for `dnorm`, `rnorm`, etc.
+## `parama`, `paramb` -- First and second parameters, respectively, of the corresponding distribution
+##
+## Optionally, `prior.sel` may also contain the following columns:
+##   * `param_name` -- Parameter name, which will be carried through to the prior object and sampler
+##   * `lower`, `upper` -- Lower and upper bounds, respectively. These can be leveraged by the BayesianToos samplers.
+##   * `best` -- Best guess for a parameter estimate. BayesianTools can also use this, though 
+##    
 create.bprior <- function(prior.sel) {
   
   # Returns a function that calculates the density of the specified 
@@ -80,7 +80,7 @@ create.bprior <- function(prior.sel) {
     return(out)
   }
   
-  # BayesianTools lower and upper bounds and best guess, if specified in data.frame
+  # BayesianTools lower and upper bounds and best, if specified in data.frame
   lower <- NULL
   if ('lower' %in% names(prior.sel)) {
     lower <- prior.sel[['lower']]
