@@ -34,8 +34,10 @@ llfunction <- function(x) {
   ss <- sum(err * err) 
   sigma2 <- rsd * rsd #residual
   
-  ll <- -0.5 * (n_obs * log(sigma2) + ss / sigma2)
+ ll <- -0.5 * (n_obs * log(sigma2) + ss / sigma2)
+#  ll <- -0.5 * (n_obs ) + ss 
   
+   
   return(ll)
 }
 
@@ -135,5 +137,7 @@ invert_prospect<-function(observed, loglike, settings){
   return(samples)
 }#end functions invert prospect
 
+observed<-as.numeric(angers2003reflectance[2,])
 
+inversion <- invert_prospect( observed = observed, loglike = llfunction, settings = settings) 
 
