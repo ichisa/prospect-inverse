@@ -68,7 +68,7 @@ rm(prior_df_all, prior_list)
 #Define the settings
 loglike<-llfunction
 settings <- list(
-#  nrChains<-3,
+  nrChains<-3,
   common = list(),
   init = list(iterations = 10000),
   loop = list(iterations = 2000),
