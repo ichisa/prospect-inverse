@@ -84,6 +84,7 @@ plot(0,type='n',axes=FALSE,ann=FALSE)
 legend("bottomleft",legend =c("Change from defined to lower","Change from defined to upper" ), col=c("orange", "darkred"), lwd=3.5, cex=1.2, bty="n")
 dev.off
 
+
 # PArameter importance for different wavelength
 
 r<-seq(51, 2051, 200)
@@ -133,7 +134,7 @@ par <- param
 ####Morris sensitivity analysisi for each wavelength###########################
  
 param$names <- c("N", "Cab", "Car", "Cw", "Cm")
-ws <- seq(from=1, to=2101, by=200)
+ws <- c(460, 680, 900, 2000, 2500)-400
 
 #par_sel <- 3
 sensitivityTarget2 <- function(mat){
@@ -157,11 +158,12 @@ run_morris<-function(wvl){
   mu<- apply(res_morris$ee, 2, mean)
   mustar <- apply(res_morris$ee, 2, function(x) mean(abs(x)))
   sigma <- apply(res_morris$ee, 2, sd)
-return(sigma)
+return(mustar)
 }
 
 ptm <- proc.time()
-sigma<-sapply(ws, run_morris)
+#sigma<-sapply(ws, run_morris)
+mustar<-sapply(ws, run_morris)
 sigma
 t2<-proc.time()
 t<-ptm$user-t2$user
@@ -169,21 +171,39 @@ t<-ptm$user-t2$user
 par(mfrow=c(1,1))
 plot(res_morris)
 
-save(musar,sigma ,ws,file="morris-sensitivity-analysis.RData")
+save(mustar,sigma ,ws,file="morris-sensitivity-analysis-2.RData")
 
 dev.off()
-plot(musar[,1], sigma[,1], pch=19, xlim=c(0, 0.5), ylim=c(0, 0.5), xlab = "mu*", ylab="sigma", main="Global Sensitvity Analysis")
-text(musar[,1], sigma[,1], labels=rownames(musar), cex= 0.7, pos=3)
-
-points(musar[,3], sigma[,3], pch=19, xlim=c(0, 0.5), ylim=c(0, 0.5), col="red")
-text(musar[,1], sigma[,1], labels=rownames(musar), cex= 0.7, pos=3)
-
-
-points(musar[,8], sigma[,8], pch=19, xlim=c(0, 0.5), ylim=c(0, 0.5), col="blue")
-text(musar[,1], sigma[,1], labels=rownames(musar), cex= 0.7, pos=3)
-
-points(musar[,11], sigma[,11], pch=19, xlim=c(0, 0.5), ylim=c(0, 0.5), col="green")
-text(musar[,1], sigma[,1], labels=rownames(musar), cex= 0.7, pos=3)
+plot(mustar[,1], sigma[,1], pch=19, xlim=c(0, 0.5), ylim=c(0, 0.5), xlab = "mu*", ylab="sigma", main="Global Sensitvity Analysis")
+text(mustar[,1], sigma[,1], labels=rownames(musar), cex= 0.7, pos=3)
+points(musar[,2], sigma[,2], pch=19, xlim=c(0, 0.5), ylim=c(0, 0.5), col="red")
+text(mustar[,1], sigma[,1], labels=rownames(musar), cex= 0.7, pos=3)
+points(mustar[,3], sigma[,3], pch=19, xlim=c(0, 0.5), ylim=c(0, 0.5), col="blue")
+text(mustar[,1], sigma[,1], labels=rownames(musar), cex= 0.7, pos=3)
+points(mustar[,4], sigma[,4], pch=19, xlim=c(0, 0.5), ylim=c(0, 0.5), col="green")
+text(mustar[,1], sigma[,1], labels=rownames(musar), cex= 0.7, pos=3)
 
 
-legend("bottomright", legend = c(ws[1], ws[5], ws[8], ws[11]), pch=19, col=c("black", "red", "blue", "green"))
+legend("bottomright", legend = c(ws[1]+400, ws[2]+400, ws[3]+400, ws[4]+400,ws[5]+400 ), pch=19, col=c("black", "red", "blue", "green"))
+###########
+
+ws <- c(460, 680, 900, 2000, 2500)-400
+
+
+sensitivityTarget2 <- function(mat){
+  result = numeric(nrow(mat))
+  for (i in 1:nrow(mat)){
+    par_temp <-param$def
+    par_temp = as.vector(mat[i,])
+    predicted <- prospect5(par_temp[1], par_temp[2],par_temp[3],par_temp[4],par_temp[5])[ws,2]
+    result[i] = predicted
+  }
+  return(result)
+}
+
+
+res_morris <-sensitivity::morrisMultOut(model=sensitivityTarget2, 
+                    factors = param$name,
+                    r=500, design=list(type="oat", levels=10, grid.jump=1), 
+                    binf=par$min, bsup=par$max, scale=T)
+
